@@ -1,4 +1,4 @@
-# VNX Kolla-Openstack
+# VNX Kolla-OpenStack
 
 OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provisioned on a VNX-based virtual scenario - inspired by the [VNX Openstack Stein Lab](https://web.dit.upm.es/vnxwiki/index.php/Vnx-labo-openstack-4nodes-classic-ovs-stein).
 
@@ -19,7 +19,7 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 
 Create a virtual scenario with VNX as follows:
 ```bash
-vnx -f openstack_lab.xml -v --create
+sudo vnx -f openstack_lab.xml -v --create
 export VNX_SCENARIO_ROOT_PATH=$(pwd)
 ```
 
@@ -77,7 +77,7 @@ Now you are ready to instantiate servers in the demo setup.
 To stop the scenario preserving the configuration and the changes made:
 ```bash
 cd $VNX_SCENARIO_ROOT_PATH
-vnx -f openstack_lab.xml -v --shutdown
+sudo vnx -f openstack_lab.xml -v --shutdown
 ```
 
 ## Teardown
@@ -85,10 +85,10 @@ vnx -f openstack_lab.xml -v --shutdown
 Destroy the VNX scenario:
 ```bash
 cd $VNX_SCENARIO_ROOT_PATH
-vnx -f openstack_lab.xml -v --destroy
+sudo vnx -f openstack_lab.xml -v --destroy
 ```
 
 To unconfigure the NAT, just execute (change eth0 by the name of your external interface):
 ```bash
-vnx_config_nat -d ExtNet eth0
+sudo vnx_config_nat -d ExtNet eth0
 ```
