@@ -63,7 +63,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     <if id="1" net="MgmtNet">
       <ipv4>10.0.0.11/24</ipv4>
     </if>
-    <if id="2" net="ExtNet">
+    <if id="4" net="ExtNet">
       <ipv4>10.0.10.11/24</ipv4>
     </if>
     <if id="9" net="virbr0">

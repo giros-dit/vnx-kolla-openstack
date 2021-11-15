@@ -10,8 +10,9 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 
 ## Requirements
 
-- Ubuntu 20.04 LTS (aka "focal"
+- Ubuntu 20.04 LTS (aka "focal")
 - Python 3 (tested with Python 3.8)
+- VNX ([Installation guide for Ubuntu](https://web.dit.upm.es/vnxwiki/index.php/Vnx-install-ubuntu3))
 
 ## Quickstart
 
@@ -50,6 +51,14 @@ Additionally, to allow external Internet access from the VMs you must configure 
 ```bash
 sudo vnx_config_nat ExtNet eth0
 ```
+> **WARNING:**
+>
+> The previous command might fail depending on your configuration of Ubuntu 20.04 LTS.
+> In that case make sure `iptables` can be found under `/sbin` and execute the `vnx_config_nat` again:
+ ```bash
+sudo ln -s /usr/sbin/iptables /sbin/iptables
+sudo vnx_config_nat ExtNet eth0
+ ```
 
 ### Start demo scenario in OpenStack
 
@@ -64,10 +73,10 @@ cd $VNX_SCENARIO_ROOT_PATH
 source conf/admin-openrc.sh
 ```
 
-Run the `init-runonce` utility to create demo setup - deploys everything but servers.
+Run the `init-runonce` utility to create demo setup - creates everything but servers.
 ```bash
 cd $VNX_SCENARIO_ROOT_PATH
-EXT_NET_CIDR='10.0.10.0/24' EXT_NET_RANGE='start=10.0.10.100,end=10.0.10.200' EXT_NET_GATEWAY='10.0.10.1' ./ansible/.kolla-venv/share/kolla-ansible/init-runonce
+EXT_NET_CIDR='10.0.10.0/24' EXT_NET_RANGE='start=10.0.10.100,end=10.0.10.200' EXT_NET_GATEWAY='10.0.10.1' ./conf/init-runonce
 ```
 
 Now you are ready to instantiate servers in the demo setup.
