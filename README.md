@@ -8,11 +8,36 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 >
 > Upgrading to Xena release is expected in the future (once kolla-ansible rolls out the stable 13.00 release)
 
-## Requirements
+## Setup
+
+### Pre-requisites
 
 - Ubuntu 20.04 LTS (aka "focal")
 - Python 3 (tested with Python 3.8)
 - VNX ([Installation guide for Ubuntu](https://web.dit.upm.es/vnxwiki/index.php/Vnx-install-ubuntu3))
+
+### Installing Kolla-Ansible (using virtual environments)
+
+First, Kolla-ansible must be installed in the host. The recommended option is installing Kolla-ansible in a Python virtual environment. Execute the following commands to create a virtual environment within `ansible/.kolla-venv` folder, and then install kolla-ansible and its dependencies, i.e., ansible:
+
+```bash
+python3 -m venv ansible/.kolla-venv
+source ansible/.kolla-venv/bin/activate
+pip install -U pip
+pip install kolla-ansible
+pip install 'ansible<2.10'
+deactivate
+```
+
+### SSH Configuration
+
+Set proper read/write permissions for the SSH private key that Ansible will use to configure the OpenStack nodes.
+
+```bash
+sudo chown 644 conf/ssh/id_rsa
+```
+
+For further details on the virtual environment configuration, please visit [Kolla-ansible Virtual Environments](https://docs.openstack.org/kolla-ansible/xena/user/virtual-environments.html)
 
 ## Quickstart
 

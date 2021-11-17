@@ -1,7 +1,0 @@
----
-- name: Load and persist openvswitch module
-  import_role:
-    name: module-load
-  vars:
-    modules:
-      - {'name': openvswitch}
