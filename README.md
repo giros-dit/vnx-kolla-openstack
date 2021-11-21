@@ -37,6 +37,14 @@ Set proper read/write permissions for the SSH private key that Ansible will use 
 sudo chown 644 conf/ssh/id_rsa
 ```
 
+### Reduce virtual machines MTU
+
+Modify dnsmasq configuration template to reduce virtual machines MTU to 1400:
+
+```bash
+echo 'dhcp-option-force=26,1400' > ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
+```
+
 For further details on the virtual environment configuration, please visit [Kolla-ansible Virtual Environments](https://docs.openstack.org/kolla-ansible/xena/user/virtual-environments.html)
 
 ## Quickstart
