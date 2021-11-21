@@ -114,6 +114,10 @@ EXT_NET_CIDR='10.0.10.0/24' EXT_NET_RANGE='start=10.0.10.100,end=10.0.10.200' EX
 
 Now you are ready to instantiate servers in the demo setup.
 
+### Connect to Openstack Dashboard
+
+To connect to OpenStack Dashboard, just open a web broser to http://10.0.0.11 and login with user 'admin'. The password can be obtained from conf/admin-openrc.sh script (OS_PASSWORD variable).
+
 ### Stopping the scenario
 
 To stop the scenario preserving the configuration and the changes made:
