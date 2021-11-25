@@ -4,9 +4,8 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 
 > **IMPORTANT NOTE:**
 >
-> This scenario installs OpenStack **Wallaby** release.
+> This scenario installs OpenStack **Xena** release.
 >
-> Upgrading to Xena release is expected in the future (once kolla-ansible rolls out the stable 13.00 release)
 
 ## Setup
 
@@ -24,8 +23,8 @@ First, Kolla-ansible must be installed in the host. The recommended option is in
 python3 -m venv ansible/.kolla-venv
 source ansible/.kolla-venv/bin/activate
 pip install -U pip
-pip install kolla-ansible==12.2.0
-pip install 'ansible<2.10'
+pip install kolla-ansible==13.0.0
+pip install 'ansible<5.0'
 deactivate
 ```
 
