@@ -24,7 +24,7 @@ First, Kolla-ansible must be installed in the host. The recommended option is in
 python3 -m venv ansible/.kolla-venv
 source ansible/.kolla-venv/bin/activate
 pip install -U pip
-pip install kolla-ansible
+pip install kolla-ansible==12.2.0
 pip install 'ansible<2.10'
 deactivate
 ```
@@ -42,7 +42,7 @@ sudo chown 644 conf/ssh/id_rsa
 Modify dnsmasq configuration template to reduce virtual machines MTU to 1400:
 
 ```bash
-echo 'dhcp-option-force=26,1400' > ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
+echo 'dhcp-option-force=26,1400' >> ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
 ```
 
 For further details on the virtual environment configuration, please visit [Kolla-ansible Virtual Environments](https://docs.openstack.org/kolla-ansible/xena/user/virtual-environments.html)
