@@ -1,0 +1,6 @@
+parameters:
+  key_name: mykey
+  flavor: m1.tiny
+  image: cirros
+  network: demo-net
+  public_net: public1
