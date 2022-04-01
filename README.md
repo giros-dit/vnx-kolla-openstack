@@ -16,6 +16,29 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 - Python 3 (tested with Python 3.8)
 - VNX ([Installation guide for Ubuntu](https://web.dit.upm.es/vnxwiki/index.php/Vnx-install-ubuntu3))
 
+### Quick recipe (for the impacient)
+
+```bash
+git clone git@github.com:giros-dit/vnx-kolla-openstack.git
+cd vnx-kolla-openstack/
+python3 -m venv ansible/.kolla-venv
+source ansible/.kolla-venv/bin/activate
+pip install -U pip
+pip install jinja2==3.0.3
+pip install kolla-ansible==12.2.0
+pip install 'ansible<2.10'
+deactivate
+sudo chown 644 conf/ssh/id_rsa
+echo 'dhcp-option-force=26,1400' >> ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
+sudo vnx -f openstack_lab.xml -v --create
+export VNX_SCENARIO_ROOT_PATH=$(pwd)
+source ansible/.kolla-venv/bin/activate
+cd $VNX_SCENARIO_ROOT_PATH/ansible
+kolla-ansible -i inventory/multinode --configdir kolla-config bootstrap-servers
+kolla-ansible -i inventory/multinode --configdir kolla-config prechecks
+kolla-ansible -i inventory/multinode --configdir kolla-config deploy
+```
+
 ### Installing Kolla-Ansible (using virtual environments)
 
 First, Kolla-ansible must be installed in the host. The recommended option is installing Kolla-ansible in a Python virtual environment. Execute the following commands to create a virtual environment within `ansible/.kolla-venv` folder, and then install kolla-ansible and its dependencies, i.e., ansible:
@@ -24,6 +47,7 @@ First, Kolla-ansible must be installed in the host. The recommended option is in
 python3 -m venv ansible/.kolla-venv
 source ansible/.kolla-venv/bin/activate
 pip install -U pip
+pip install jinja2==3.0.3
 pip install kolla-ansible==12.2.0
 pip install 'ansible<2.10'
 deactivate
