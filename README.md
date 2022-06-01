@@ -30,6 +30,7 @@ pip install 'ansible<2.10'
 deactivate
 sudo chown 644 conf/ssh/id_rsa
 echo 'dhcp-option-force=26,1400' >> ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
+sed -i -e 's/network_vlan_ranges =.*/network_vlan_ranges = physnet1/' ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/ml2_conf.ini.j2
 sudo vnx -f openstack_lab.xml -v --create
 export VNX_SCENARIO_ROOT_PATH=$(pwd)
 source ansible/.kolla-venv/bin/activate
@@ -64,9 +65,12 @@ sudo chown 644 conf/ssh/id_rsa
 ### Reduce virtual machines MTU
 
 Modify dnsmasq configuration template to reduce virtual machines MTU to 1400:
-
 ```bash
 echo 'dhcp-option-force=26,1400' >> ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
+```
+### Set provider networks interface name in ml2_conf.ini
+```bash
+sed -i -e 's/network_vlan_ranges =.*/network_vlan_ranges = physnet1/' ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/ml2_conf.ini.j2
 ```
 
 For further details on the virtual environment configuration, please visit [Kolla-ansible Virtual Environments](https://docs.openstack.org/kolla-ansible/xena/user/virtual-environments.html)
