@@ -52,6 +52,29 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
 
   <!--
     ~~
+    ~~   A D M I N   N O D E
+    ~~
+  -->
+  <vm name="admin" type="lxc" exec_mode="lxc-attach" arch="x86_64">
+    <filesystem type="cow">/usr/share/vnx/filesystems/rootfs_lxc_ubuntu64</filesystem>
+    <if id="1" net="MgmtNet">
+      <ipv4>10.0.0.1/24</ipv4>
+    </if>
+    <if id="9" net="virbr0">
+      <ipv4>dhcp</ipv4>
+    </if>
+    <filetree seq="on_boot" root="/usr/bin/">/usr/bin/vnx_config_nat</filetree>
+    <exec seq="on_boot" type="verbatim">
+        dhclient eth9
+        apt-get update
+        apt-get install -y iptables
+        /usr/bin/vnx_config_nat eth1 eth9
+    </exec>
+  </vm>
+
+
+  <!--
+    ~~
     ~~   C O N T R O L L E R   N O D E
     ~~
   -->
@@ -66,9 +89,10 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     <if id="4" net="ExtNet">
       <ipv4>10.0.10.11/24</ipv4>
     </if>
-    <if id="9" net="virbr0">
+    <!--if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
-    </if>
+    </if-->
+    <route type="ipv4" gw="10.0.0.1">default</route>
 
     <!-- Copy ntp config and restart service -->
     <!-- Note: not used because ntp cannot be used inside a container. Clocks are supposed to be synchronized
@@ -82,6 +106,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         # Change MgmtNet and TunnNet interfaces MTU
         ifconfig eth1 mtu 1450
         sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
+        systemd-resolve --set-dns=8.8.8.8 --interface=eth1
     </exec>
   </vm>
 
@@ -105,9 +130,10 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </if>
     <if id="4" net="ExtNet">
     </if>
-    <if id="9" net="virbr0">
+    <!--if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
-    </if>
+    </if-->
+    <route type="ipv4" gw="10.0.0.1">default</route>
     <forwarding type="ip" />
     <forwarding type="ipv6" />
 
@@ -119,6 +145,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
         ifconfig eth3 mtu 1450
         sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        systemd-resolve --set-dns=8.8.8.8 --interface=eth1
     </exec>
 
     <!-- Copy ntp config and restart service -->
@@ -148,9 +175,10 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </if>
     <if id="4" net="ExtNet">
     </if>
-    <if id="9" net="virbr0">
+    <!--if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
-    </if>
+    </if-->
+    <route type="ipv4" gw="10.0.0.1">default</route>
 
     <exec seq="on_boot" type="verbatim">
         # Create /dev/net/tun device
@@ -163,6 +191,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
         ifconfig eth3 mtu 1450
         sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        systemd-resolve --set-dns=8.8.8.8 --interface=eth1
     </exec>
 
     <!-- Copy ntp config and restart service -->
@@ -192,9 +221,10 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </if>
     <if id="4" net="ExtNet">
     </if>
-    <if id="9" net="virbr0">
+    <!--if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
-    </if>
+    </if-->
+    <route type="ipv4" gw="10.0.0.1">default</route>
 
     <exec seq="on_boot" type="verbatim">
         # Create /dev/net/tun device
@@ -207,6 +237,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
         ifconfig eth3 mtu 1450
         sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        systemd-resolve --set-dns=8.8.8.8 --interface=eth1
     </exec>
 
     <!-- Copy ntp config and restart service -->
@@ -228,14 +259,54 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
        <ipv4>10.0.10.1/24</ipv4>
     </hostif>
     <hostif net="MgmtNet">
-      <ipv4>10.0.0.1/24</ipv4>
+      <ipv4>10.0.0.2/24</ipv4>
     </hostif>
+
+    <exec seq="create-extnet" type="verbatim">
+        . conf/admin-openrc.sh
+        openstack network create --share --external --provider-physical-network physnet2 --provider-network-type flat ExtNet
+        openstack subnet create --network ExtNet --gateway 10.0.10.1 --dns-nameserver 10.0.10.1 --subnet-range 10.0.10.0/24 --allocation-pool start=10.0.10.100,end=10.0.10.200 ExtSubNet
+    </exec>
+
+    <exec seq="load-img" type="verbatim">
+        #dhclient eth9 # just in case the Internet connection is not active...
+
+        . conf/admin-openrc.sh
+
+        # Create flavors if not created
+        openstack flavor show m1.nano >/dev/null 2>&amp;1    || openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 1 m1.nano
+        openstack flavor show m1.tiny >/dev/null 2>&amp;1    || openstack flavor create --id 1 --vcpus 1 --ram 512 --disk 1 m1.tiny
+        openstack flavor show m1.smaller >/dev/null 2>&amp;1 || openstack flavor create --id 6 --vcpus 1 --ram 512 --disk 3 m1.smaller
+
+        # Cirros image
+        #wget -P /tmp/images http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
+        wget -P /tmp/images http://vnx.dit.upm.es/vnx/filesystems/ostack-images/cirros-0.3.4-x86_64-disk-vnx.qcow2
+        #glance image-create --name "cirros-0.3.4-x86_64-vnx" --file /tmp/images/cirros-0.3.4-x86_64-disk-vnx.qcow2 --disk-format qcow2 --container-format bare --visibility public --progress
+        openstack image create --file /tmp/images/cirros-0.3.4-x86_64-disk-vnx.qcow2 --disk-format qcow2 --public cirros-0.3.4-x86_64-vnx
+        rm /tmp/images/cirros-0.3.4-x86_64-disk*.qcow2
+
+        # Ubuntu image (trusty)
+        wget -P /tmp/images http://vnx.dit.upm.es/vnx/filesystems/ostack-images/trusty-server-cloudimg-amd64-disk1-vnx.qcow2
+        #glance image-create --name "trusty-server-cloudimg-amd64-vnx" --file /tmp/images/trusty-server-cloudimg-amd64-disk1-vnx.qcow2 --disk-format qcow2 --container-format bare --visibility public --progress
+        openstack image create --file /tmp/images/trusty-server-cloudimg-amd64-disk1-vnx.qcow2 --disk-format qcow2 --public trusty-server-cloudimg-amd64-vnx
+        rm /tmp/images/trusty-server-cloudimg-amd64-disk1*.qcow2
+
+        # Ubuntu image (xenial)
+        wget -P /tmp/images http://vnx.dit.upm.es/vnx/filesystems/ostack-images/xenial-server-cloudimg-amd64-disk1-vnx.qcow2
+        #glance image-create --name "xenial-server-cloudimg-amd64-vnx" --file /tmp/images/xenial-server-cloudimg-amd64-disk1-vnx.qcow2 --disk-format qcow2 --container-format bare --visibility public --progress
+        openstack image create --file /tmp/images/xenial-server-cloudimg-amd64-disk1-vnx.qcow2 --disk-format qcow2 --public xenial-server-cloudimg-amd64-vnx
+        rm /tmp/images/xenial-server-cloudimg-amd64-disk1*.qcow2
+
+        #wget -P /tmp/images http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2
+        #glance image-create --name "CentOS-7-x86_64" --file /tmp/images/CentOS-7-x86_64-GenericCloud.qcow2 --disk-format qcow2 --container-format bare --visibility public --progress
+        #rm /tmp/images/CentOS-7-x86_64-GenericCloud.qcow2
+    </exec>
 
     <!--
          CREATE DEMO SCENARIO
     -->
     <exec seq="create-demo-scenario" type="verbatim">
-        source conf/admin-openrc.sh
+        . conf/admin-openrc.sh
 
         # Create internal network
         openstack network create net0
@@ -247,8 +318,8 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm1 --nic net-id=net0 --key-name vm1
 
         # Create external network
-        openstack network create --share --external --provider-physical-network provider --provider-network-type flat ExtNet
-        openstack subnet create --network ExtNet --gateway 10.0.10.1 --dns-nameserver 10.0.10.1 --subnet-range 10.0.10.0/24 --allocation-pool start=10.0.10.100,end=10.0.10.200 ExtSubNet
+        #openstack network create --share --external --provider-physical-network provider --provider-network-type flat ExtNet
+        #openstack subnet create --network ExtNet --gateway 10.0.10.1 --dns-nameserver 10.0.10.1 --subnet-range 10.0.10.0/24 --allocation-pool start=10.0.10.100,end=10.0.10.200 ExtSubNet
         openstack router create r0
         openstack router set r0 --external-gateway ExtNet
         openstack router add subnet r0 subnet0
@@ -264,7 +335,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </exec>
 
     <exec seq="create-demo-vm2" type="verbatim">
-        source /root/bin/admin-openrc.sh
+        . conf/admin-openrc.sh
         # Create virtual machine
         mkdir -p /root/keys
         openstack keypair create vm2 > /root/keys/vm2
@@ -275,7 +346,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </exec>
 
     <exec seq="create-demo-vm3" type="verbatim">
-        source /root/bin/admin-openrc.sh
+        . conf/admin-openrc.sh
         # Create virtual machine
         mkdir -p /root/keys
         openstack keypair create vm3 > /root/keys/vm3
@@ -286,11 +357,18 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </exec>
 
     <exec seq="create-vlan-demo-scenario" type="verbatim">
-        source /root/bin/admin-openrc.sh
+        . conf/admin-openrc.sh
+
+        # Create security group rules to allow ICMP, SSH and WWW access
+        admin_project_id=$(openstack project show admin -c id -f value)
+        default_secgroup_id=$(openstack security group list -f value | grep $admin_project_id | cut -d " " -f1)
+        openstack security group rule create --proto icmp --dst-port 0  $default_secgroup_id
+        openstack security group rule create --proto tcp  --dst-port 80 $default_secgroup_id
+        openstack security group rule create --proto tcp  --dst-port 22 $default_secgroup_id
 
         # Create vlan based networks and subnetworks
-        openstack network create --share --provider-physical-network vlan --provider-network-type vlan --provider-segment 1000 vlan1000
-        openstack network create --share --provider-physical-network vlan --provider-network-type vlan --provider-segment 1001 vlan1001
+        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1000 vlan1000
+        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1001 vlan1001
         openstack subnet create --network vlan1000 --gateway 10.1.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.2.0/24 --allocation-pool start=10.1.2.2,end=10.1.2.99 subvlan1000
         openstack subnet create --network vlan1001 --gateway 10.1.3.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.3.0/24 --allocation-pool start=10.1.3.2,end=10.1.3.99 subvlan1001
 
@@ -301,11 +379,9 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         openstack keypair create vmB1 > tmp/vmB1
         openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmB1 --nic net-id=vlan1001 --key-name vmB1
 
-        # Create security group rules to allow ICMP, SSH and WWW access
-        openstack security group rule create --proto icmp --dst-port 0  default
-        openstack security group rule create --proto tcp  --dst-port 80 default
-        openstack security group rule create --proto tcp  --dst-port 22 default
     </exec>
+
   </host>
+
 
 </vnx>
