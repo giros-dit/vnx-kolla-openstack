@@ -1,19 +1,20 @@
 # VNX Kolla-OpenStack
 
+Under development...
+
 OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provisioned on a VNX-based virtual scenario - inspired by the [VNX Openstack Stein Lab](https://web.dit.upm.es/vnxwiki/index.php/Vnx-labo-openstack-4nodes-classic-ovs-stein).
 
 > **IMPORTANT NOTE:**
 >
-> This scenario installs OpenStack **Wallaby** release.
+> This scenario installs OpenStack **Antelope** release.
 >
-> Upgrading to Xena release is expected in the future (once kolla-ansible rolls out the stable 13.00 release)
 
 ## Setup
 
 ### Pre-requisites
 
-- Ubuntu 20.04 LTS (aka "focal")
-- Python 3 (tested with Python 3.8)
+- (Tested with) Ubuntu 22.04 LTS (aka "jammy")
+- Python 3 (tested with Python 3.10)
 - VNX ([Installation guide for Ubuntu](https://web.dit.upm.es/vnxwiki/index.php/Vnx-install-ubuntu3))
 
 ### Quick recipe (for the impacient)
