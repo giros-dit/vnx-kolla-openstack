@@ -17,7 +17,7 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 
 ### Quick recipe (for the impatient)
 
-OpenStack cluster startup and configuration:
+- OpenStack cluster startup and configuration:
 ```bash
 git clone --branch antelope git@github.com:giros-dit/vnx-kolla-openstack.git
 cd vnx-kolla-openstack/
@@ -32,7 +32,7 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ deploy
 kolla-ansible post-deploy
 ```
-Access to the cluster:
+#### Access to the cluster:
 Install the OpenStack client with:
 ```bash
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
