@@ -4,16 +4,15 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 
 > **IMPORTANT NOTE:**
 >
-> This scenario installs OpenStack **Wallaby** release.
+> This scenario installs OpenStack **Antelope** release.
 >
-> Upgrading to Xena release is expected in the future (once kolla-ansible rolls out the stable 13.00 release)
 
 ## Setup
 
 ### Pre-requisites
 
-- Ubuntu 20.04 LTS (aka "focal")
-- Python 3 (tested with Python 3.8)
+- (Tested with) Ubuntu 22.04 LTS (aka "jammy")
+- Python 3 (tested with Python 3.10.12)
 - VNX ([Installation guide for Ubuntu](https://web.dit.upm.es/vnxwiki/index.php/Vnx-install-ubuntu3))
 
 ### Quick recipe (for the impacient)
