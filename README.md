@@ -32,13 +32,15 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ deploy
 kolla-ansible post-deploy
 ```
-2. Install in admin or host node the OpenStack client to access the cluster:
+2. The keys to access the cluster are located in /etc/kolla directory of admin node:
+ - admin-openrc.sh: shellscript that populate environment variables with credentials and other data
+ - clouds.yaml: this file can be copied to /etc/openstack directory and allows the execution of openstack client commands using "--os-cloud=kolla-admin" option.
+3. You can access the cluster by:
+- Graphical user interface, by connecting to http://10.0.0.11 from a web browser
+- Command line, by using openstack commands. For that, you have to install the OpenStack client:
 ```bash
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
 ```
-3. The keys to access the cluster are located in /etc/kolla directory of admin node:
- - admin-openrc.sh: shellscript that populate environment variables with credentials and other data
- - clouds.yaml: this file can be copied to /etc/openstack directory and allows the execution of openstack client commands using "--os-cloud=kolla-admin" option.
 4. Deploy testing scenarios:
  - Load vm images with:
 ```bash
