@@ -54,7 +54,7 @@ sudo vnx -f openstack_kolla_ansible.xml -x create-demo-scenario
 ```
 - Deploy additional virtual machines:
 ```bash
-sudo vnx -f openstack_kolla_ansible.xml -x create-vm2,create-vm3,create-vm4
+sudo vnx -f openstack_kolla_ansible.xml -x create-demo-vm2,create-demo-vm3,create-demo-vm4
 ```
 
 ### Installing Kolla-Ansible (using virtual environments)
