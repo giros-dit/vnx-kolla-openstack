@@ -17,7 +17,7 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 
 ### Quick recipe (for the impatient)
 
-- OpenStack cluster startup and configuration:
+1. OpenStack cluster startup and configuration:
 ```bash
 git clone --branch antelope git@github.com:giros-dit/vnx-kolla-openstack.git
 cd vnx-kolla-openstack/
@@ -32,14 +32,26 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ deploy
 kolla-ansible post-deploy
 ```
-- Install in admin or host node the OpenStack client to access the cluster:
+2. Install in admin or host node the OpenStack client to access the cluster:
 ```bash
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
 ```
-- The keys to access the cluster are located in /etc/kolla directory of admin node:
+3. The keys to access the cluster are located in /etc/kolla directory of admin node:
  - admin-openrc.sh: shellscript that populate environment variables with credentials and other data
  - clouds.yaml: this file can be copied to /etc/openstack directory and allows the execution of openstack client commands using "--os-cloud=kolla-admin" option.
-
+4. Deploy testing scenarios:
+ - Load vm images with:
+```bash
+sudo vnx -f openstack_kolla_ansible.xml -x load-img
+```
+ - Create external network with:
+```bash
+sudo vnx -f openstack_kolla_ansible.xml -x create-extnet
+```
+- Deploy simple demo scenario (one virtual network with one virtual machine):
+```bash
+sudo vnx -f openstack_kolla_ansible.xml -x create-demo-scenario
+```
 
 ### Installing Kolla-Ansible (using virtual environments)
 
