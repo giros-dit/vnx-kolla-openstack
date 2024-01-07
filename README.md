@@ -48,6 +48,10 @@ sudo vnx -f openstack_kolla_ansible.xml -x load-img
 ```bash
 sudo vnx -f openstack_kolla_ansible.xml -x create-extnet
 ```
+- Config NAT to provide Internet access to virtual machines (change eno1 by the name of the network interface that provides Internet connectivity to the host machine):
+```bash
+sudo vnx_config_nat ExtNet eno1
+```
 - Deploy simple demo scenario (one virtual network with one virtual machine):
 ```bash
 sudo vnx -f openstack_kolla_ansible.xml -x create-demo-scenario
