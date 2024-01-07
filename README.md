@@ -23,25 +23,15 @@ cd vnx-kolla-openstack/
 ssh-keygen -t rsa -f conf/ssh/id_rsa -q -N ""
 sudo chown 644 conf/ssh/id_rsa
 sudo vnx -f openstack_lab.xml -v --create
+sudo vnx -f openstack_kolla_ansible.xml -x config-admin
+ssh root@admin
+source /root/kolla/bin/activate
+kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ bootstrap-servers
+kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ prechecks
+kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ deploy
+kolla-ansible post-deploy
 
 
-python3 -m venv ansible/.kolla-venv
-source ansible/.kolla-venv/bin/activate
-pip install -U pip
-pip install jinja2==3.0.3
-pip install kolla-ansible==12.2.0
-pip install 'ansible<2.10'
-deactivate
-sudo chown 644 conf/ssh/id_rsa
-echo 'dhcp-option-force=26,1400' >> ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/dnsmasq.conf.j2
-sed -i -e 's/network_vlan_ranges =.*/network_vlan_ranges = physnet1/' ./ansible/.kolla-venv/share/kolla-ansible/ansible/roles/neutron/templates/ml2_conf.ini.j2
-sudo vnx -f openstack_lab.xml -v --create
-export VNX_SCENARIO_ROOT_PATH=$(pwd)
-source ansible/.kolla-venv/bin/activate
-cd $VNX_SCENARIO_ROOT_PATH/ansible
-kolla-ansible -i inventory/multinode --configdir kolla-config bootstrap-servers
-kolla-ansible -i inventory/multinode --configdir kolla-config prechecks
-kolla-ansible -i inventory/multinode --configdir kolla-config deploy
 ```
 
 ### Installing Kolla-Ansible (using virtual environments)
