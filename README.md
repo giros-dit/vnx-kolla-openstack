@@ -18,7 +18,7 @@ OpenStack scenario deployed with Kolla-ansible. The OpenStack platform is provis
 ### Quick recipe (for the impacient)
 
 ```bash
-git clone git@github.com:giros-dit/vnx-kolla-openstack.git
+git clone --branch antelope git@github.com:giros-dit/vnx-kolla-openstack.git
 cd vnx-kolla-openstack/
 python3 -m venv ansible/.kolla-venv
 source ansible/.kolla-venv/bin/activate
