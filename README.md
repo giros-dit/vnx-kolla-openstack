@@ -32,7 +32,7 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ deploy
 kolla-ansible post-deploy
 ```
-#### Access to the cluster:
+- Access to the cluster:
 Install the OpenStack client with:
 ```bash
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
