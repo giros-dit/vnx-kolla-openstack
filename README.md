@@ -30,8 +30,6 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ prechecks
 kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --configdir /etc/kolla/ deploy
 kolla-ansible post-deploy
-
-
 ```
 
 ### Installing Kolla-Ansible (using virtual environments)
