@@ -42,6 +42,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         <console id="0" display="no"/>
         <console id="1" display="yes"/>
     </vm_defaults>
+    <cmd-seq seq="config-admin">config-admin1,config-admin2</cmd-seq>
   </global>
 
   <net name="MgmtNet" mode="openvswitch" mtu="1450"/>
@@ -74,7 +75,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
 	sudo chown 644 /root/.ssh/id_rsa
 	cat /tmp/hosts >> /etc/hosts
 	rm /tmp/hosts
-	for c in controller network compute1 compute2; do
+	for c in controller network compute1 compute2 compute3; do
             while ! $( nc -z $c 22 ); do sleep 1; done
 	    ssh -o StrictHostKeyChecking=accept-new root@$c w
         done
@@ -83,9 +84,9 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
 	#ssh -o StrictHostKeyChecking=accept-new root@compute2 w
     </exec>
     <exec seq="config-admin1" type="verbatim">
-	for c in controller network compute1 compute2; do while ! $( nc -z $c 22 ); do sleep 1; done; ssh -o StrictHostKeyChecking=accept-new root@$c w; done
-        for c in 10.0.0.11 10.0.0.21 10.0.0.31 10.0.0.32; do while ! $( nc -z $c 22 ); do sleep 1; done; ssh -o StrictHostKeyChecking=accept-new root@$c w; done
-	for c in controller network compute1 compute2; do apt update; done
+	for c in controller network compute1 compute2 compute3; do while ! $( nc -z $c 22 ); do sleep 1; done; ssh -o StrictHostKeyChecking=accept-new root@$c w; done
+        for c in 10.0.0.11 10.0.0.21 10.0.0.31 10.0.0.32 10.0.0.33; do while ! $( nc -z $c 22 ); do sleep 1; done; ssh -o StrictHostKeyChecking=accept-new root@$c w; done
+	for c in controller network compute1 compute2 compute3; do apt update; done
         export DEBIAN_FRONTEND=noninteractive
         sudo apt update
         sudo apt install -y git python3-dev libffi-dev gcc libssl-dev python3-venv
@@ -108,6 +109,9 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         sed -i 's/#enable_neutron_provider_networks:.*/enable_neutron_provider_networks: "yes"/' /etc/kolla/globals.yml
         sed -i 's/#enable_ceilometer:.*/enable_ceilometer: "yes"/' /etc/kolla/globals.yml
         sed -i 's/#enable_gnocchi:.*/enable_gnocchi: "yes"/' /etc/kolla/globals.yml
+        #sed -i 's/#kolla_external_vip_address.*/kolla_external_vip_address: "10.0.10.250"/' /etc/kolla/globals.yml
+        #sed -i 's/#kolla_external_vip_interface.*/kolla_external_vip_interface: "eth4"/' /etc/kolla/globals.yml
+        pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
     </exec>
     <filetree seq="config-admin2" root="/root/kolla/share/kolla-ansible/ansible/inventory/">conf/admin/multinode</filetree>
     <exec seq="config-admin2" type="verbatim">
@@ -218,6 +222,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </exec>
 
     <exec seq="create-demo-vm4" type="verbatim">
+        source /root/kolla/bin/activate
         source /etc/kolla/admin-openrc.sh
         # Create virtual machine
         mkdir -p /root/keys
@@ -380,6 +385,55 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     </if>
     <if id="2" net="TunnNet">
       <ipv4>10.0.1.32/24</ipv4>
+    </if>
+    <if id="3" net="VlanNet">
+    </if>
+    <if id="4" net="ExtNet">
+    </if>
+    <!--if id="9" net="virbr0">
+      <ipv4>dhcp</ipv4>
+    </if-->
+    <route type="ipv4" gw="10.0.0.1">default</route>
+
+    <exec seq="on_boot" type="verbatim">
+        # Create /dev/net/tun device
+        #mkdir -p /dev/net/
+        #mknod -m 666 /dev/net/tun  c 10 200
+        # Change MgmtNet and TunnNet interfaces MTU
+        ifconfig eth1 mtu 1450
+        sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth2 mtu 1450
+        sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth3 mtu 1450
+        sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        #systemd-resolve --set-dns=8.8.8.8 --interface=eth1
+	resolvectl dns 2 1.1.1.1
+        #apt update
+	#apt install -y openvswitch-switch
+    </exec>
+
+    <!-- Copy ntp config and restart service -->
+    <!-- Note: not used because ntp cannot be used inside a container. Clocks are supposed to be synchronized
+         between the vms/containers and the host -->
+    <!--filetree seq="on_boot" root="/etc/chrony/chrony.conf">conf/ntp/chrony-others.conf</filetree>
+    <exec seq="on_boot" type="verbatim">
+        service chrony restart
+    </exec-->
+  </vm>
+
+  <!--
+    ~~~
+    ~~~  C O M P U T E 3   N O D E
+    ~~~
+  -->
+  <vm name="compute3" type="libvirt" subtype="kvm" os="linux" exec_mode="sdisk" arch="x86_64" vcpu="2">
+    <filesystem type="cow">/usr/share/vnx/filesystems/vnx_rootfs_kvm_ubuntu64-22.04-v025.qcow2</filesystem>
+    <mem>2G</mem>
+    <if id="1" net="MgmtNet">
+      <ipv4>10.0.0.33/24</ipv4>
+    </if>
+    <if id="2" net="TunnNet">
+      <ipv4>10.0.1.33/24</ipv4>
     </if>
     <if id="3" net="VlanNet">
     </if>
