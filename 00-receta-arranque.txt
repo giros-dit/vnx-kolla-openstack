@@ -11,10 +11,10 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible post-deploy
 exit   # back to host
 
-Configuracion del cliente openstack 
+Configuracion del cliente openstack en el host:
 
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
-cp /etc/kolla/clouds.yaml /etc/openstack
+sudo scp root@admin:/etc/kolla/clouds.yaml /etc/openstack
 
 
 Arranque del escenario de demo
