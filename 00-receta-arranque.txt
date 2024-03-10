@@ -11,6 +11,9 @@ kolla-ansible -i /root/kolla/share/kolla-ansible/ansible/inventory/multinode --c
 kolla-ansible post-deploy
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
 cp /etc/kolla/clouds.yaml /etc/openstack
+exit   # back to host
+
+# Start demo scenario
 sudo vnx -f openstack_kolla_ansible.xml -x load-img,create-extnet
 sudo vnx -f openstack_kolla_ansible.xml -x create-demo-scenario 
 sudo vnx -f openstack_kolla_ansible.xml -x create-demo-vm2 
