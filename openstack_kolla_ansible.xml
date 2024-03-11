@@ -67,6 +67,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     <filetree seq="on_boot" root="/usr/bin/">/usr/bin/vnx_config_nat</filetree>
     <filetree seq="on_boot" root="/root/.ssh/">conf/ssh/id_rsa</filetree>
     <filetree seq="on_boot" root="/tmp/">conf/admin/hosts</filetree>
+    <filetree seq="on_boot" root="/root/">conf/admin/deploy-ostack</filetree>
     <exec seq="on_boot" type="verbatim">
         dhclient eth9
         apt-get update
@@ -232,6 +233,32 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         #openstack ip floating add $( openstack ip floating create ExtNet -c ip -f value ) vm4
         openstack server add floating ip vm4 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
     </exec>
+
+    <exec seq="create-vlan-demo-scenario" type="verbatim">
+        source /root/kolla/bin/activate
+        source /etc/kolla/admin-openrc.sh
+        # Create security group rules to allow ICMP, SSH and WWW access
+        admin_project_id=$(openstack project show admin -c id -f value)
+        default_secgroup_id=$(openstack security group list -f value | grep $admin_project_id | cut -d " " -f1)
+        openstack security group rule create --proto icmp --dst-port 0  $default_secgroup_id
+        openstack security group rule create --proto tcp  --dst-port 80 $default_secgroup_id
+        openstack security group rule create --proto tcp  --dst-port 22 $default_secgroup_id
+
+        # Create vlan based networks and subnetworks
+        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1000 vlan1000
+        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1001 vlan1001
+        openstack subnet create --network vlan1000 --gateway 10.1.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.2.0/24 --allocation-pool start=10.1.2.2,end=10.1.2.99 subvlan1000
+        openstack subnet create --network vlan1001 --gateway 10.1.3.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.3.0/24 --allocation-pool start=10.1.3.2,end=10.1.3.99 subvlan1001
+
+        # Create virtual machine
+        mkdir -p tmp
+        openstack keypair create vmA1 > tmp/vmA1
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmA1 --nic net-id=vlan1000 --key-name vmA1
+        openstack keypair create vmB1 > tmp/vmB1
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmB1 --nic net-id=vlan1001 --key-name vmB1
+
+    </exec>
+
   </vm>
 
 
@@ -482,31 +509,6 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     <hostif net="MgmtNet">
       <ipv4>10.0.0.2/24</ipv4>
     </hostif>
-
-    <exec seq="create-vlan-demo-scenario" type="verbatim">
-        . conf/admin-openrc.sh
-
-        # Create security group rules to allow ICMP, SSH and WWW access
-        admin_project_id=$(openstack project show admin -c id -f value)
-        default_secgroup_id=$(openstack security group list -f value | grep $admin_project_id | cut -d " " -f1)
-        openstack security group rule create --proto icmp --dst-port 0  $default_secgroup_id
-        openstack security group rule create --proto tcp  --dst-port 80 $default_secgroup_id
-        openstack security group rule create --proto tcp  --dst-port 22 $default_secgroup_id
-
-        # Create vlan based networks and subnetworks
-        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1000 vlan1000
-        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1001 vlan1001
-        openstack subnet create --network vlan1000 --gateway 10.1.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.2.0/24 --allocation-pool start=10.1.2.2,end=10.1.2.99 subvlan1000
-        openstack subnet create --network vlan1001 --gateway 10.1.3.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.3.0/24 --allocation-pool start=10.1.3.2,end=10.1.3.99 subvlan1001
-
-        # Create virtual machine
-        mkdir -p tmp
-        openstack keypair create vmA1 > tmp/vmA1
-        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmA1 --nic net-id=vlan1000 --key-name vmA1
-        openstack keypair create vmB1 > tmp/vmB1
-        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmB1 --nic net-id=vlan1001 --key-name vmB1
-
-    </exec>
 
   </host>
 

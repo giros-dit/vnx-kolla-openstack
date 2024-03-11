@@ -32,7 +32,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
   xsi:noNamespaceSchemaLocation="/usr/share/xml/vnx/vnx-2.00.xsd">
   <global>
     <version>2.0</version>
-    <scenario_name>openstack_kolla_openstack</scenario_name>
+    <scenario_name>openstack_kolla_openstack-vlan</scenario_name>
     <ssh_key>conf/ssh/id_rsa.pub</ssh_key>
     <automac/>
     <vm_mgmt type="private" network="192.168.50.0" mask="24" offset="16">
@@ -68,6 +68,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     <filetree seq="on_boot" root="/usr/bin/">/usr/bin/vnx_config_nat</filetree>
     <filetree seq="on_boot" root="/root/.ssh/">conf/ssh/id_rsa</filetree>
     <filetree seq="on_boot" root="/tmp/">conf/admin/hosts</filetree>
+    <filetree seq="on_boot" root="/root/">conf/admin/deploy-ostack</filetree>
     <exec seq="on_boot" type="verbatim">
         dhclient eth9
         apt-get update
@@ -112,6 +113,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         sed -i 's/#enable_gnocchi:.*/enable_gnocchi: "yes"/' /etc/kolla/globals.yml
         #sed -i 's/#kolla_external_vip_address.*/kolla_external_vip_address: "10.0.10.250"/' /etc/kolla/globals.yml
         #sed -i 's/#kolla_external_vip_interface.*/kolla_external_vip_interface: "eth4"/' /etc/kolla/globals.yml
+	sed -i -e 's/network_vlan_ranges =.*/network_vlan_ranges = physnet1/' /root/kolla/share/kolla-ansible/ansible/roles/neutron/templates/ml2_conf.ini.j2
         pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2023.1
     </exec>
     <filetree seq="config-admin2" root="/root/kolla/share/kolla-ansible/ansible/inventory/">conf/admin/multinode</filetree>
@@ -233,6 +235,32 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         #openstack ip floating add $( openstack ip floating create ExtNet -c ip -f value ) vm4
         openstack server add floating ip vm4 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
     </exec>
+
+    <exec seq="create-vlan-demo-scenario" type="verbatim">
+        source /root/kolla/bin/activate
+        source /etc/kolla/admin-openrc.sh
+        # Create security group rules to allow ICMP, SSH and WWW access
+        admin_project_id=$(openstack project show admin -c id -f value)
+        default_secgroup_id=$(openstack security group list -f value | grep $admin_project_id | cut -d " " -f1)
+        openstack security group rule create --proto icmp --dst-port 0  $default_secgroup_id
+        openstack security group rule create --proto tcp  --dst-port 80 $default_secgroup_id
+        openstack security group rule create --proto tcp  --dst-port 22 $default_secgroup_id
+
+        # Create vlan based networks and subnetworks
+        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1000 vlan1000
+        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1001 vlan1001
+        openstack subnet create --network vlan1000 --gateway 10.1.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.2.0/24 --allocation-pool start=10.1.2.2,end=10.1.2.99 subvlan1000
+        openstack subnet create --network vlan1001 --gateway 10.1.3.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.3.0/24 --allocation-pool start=10.1.3.2,end=10.1.3.99 subvlan1001
+
+        # Create virtual machine
+        mkdir -p tmp
+        openstack keypair create vmA1 > tmp/vmA1
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmA1 --nic net-id=vlan1000 --key-name vmA1
+        openstack keypair create vmB1 > tmp/vmB1
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmB1 --nic net-id=vlan1001 --key-name vmB1
+
+    </exec>
+
   </vm>
 
 
@@ -271,6 +299,8 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         # Change MgmtNet and TunnNet interfaces MTU
         ifconfig eth1 mtu 1450
         sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth5 mtu 1450
+        sed -i -e '/iface eth5 inet static/a \   mtu 1450' /etc/network/interfaces
         #systemd-resolve --set-dns=8.8.8.8 --interface=eth1
         resolvectl dns 2 1.1.1.1
         ip link add link eth5 name extnet type vlan id 10
@@ -312,10 +342,8 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         # Change MgmtNet and TunnNet interfaces MTU
         ifconfig eth1 mtu 1450
         sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth2 mtu 1450
-        sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth3 mtu 1450
-        sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth5 mtu 1450
+        sed -i -e '/iface eth5 inet static/a \   mtu 1450' /etc/network/interfaces
         #systemd-resolve --set-dns=8.8.8.8 --interface=eth1
 	resolvectl dns 2 1.1.1.1
         #apt update
@@ -325,7 +353,7 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
 	sudo ip link add link eth5 name tunnet type vlan id 20
         sudo ip addr add 10.0.1.21/24 dev tunnet
         sudo ip link set tunnet up
-	sudo ip link add link eth5 name vlannet type vlan id 30
+	sudo ip link add link eth5 name vlannet type vlan id 30 proto 802.1ad
         sudo ip link set vlannet up
     </exec>
 
@@ -370,18 +398,18 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         # Change MgmtNet and TunnNet interfaces MTU
         ifconfig eth1 mtu 1450
         sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth2 mtu 1450
-        sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth3 mtu 1450
-        sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth5 mtu 1450
+        sed -i -e '/iface eth5 inet static/a \   mtu 1450' /etc/network/interfaces
         #systemd-resolve --set-dns=8.8.8.8 --interface=eth1
         resolvectl dns 2 1.1.1.1
         #apt update
         #apt install -y openvswitch-switch
+	sudo ip link add link eth5 name extnet type vlan id 10
+        sudo ip link set extnet up
         sudo ip link add link eth5 name tunnet type vlan id 20
         sudo ip addr add 10.0.1.31/24 dev tunnet
         sudo ip link set tunnet up
-        sudo ip link add link eth5 name vlannet type vlan id 30
+        sudo ip link add link eth5 name vlannet type vlan id 30 proto 802.1ad
         sudo ip link set vlannet up
     </exec>
 
@@ -426,18 +454,18 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         # Change MgmtNet and TunnNet interfaces MTU
         ifconfig eth1 mtu 1450
         sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth2 mtu 1450
-        sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth3 mtu 1450
-        sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth5 mtu 1450
+        sed -i -e '/iface eth5 inet static/a \   mtu 1450' /etc/network/interfaces
         #systemd-resolve --set-dns=8.8.8.8 --interface=eth1
         resolvectl dns 2 1.1.1.1
         #apt update
         #apt install -y openvswitch-switch
+	sudo ip link add link eth5 name extnet type vlan id 10
+        sudo ip link set extnet up
         sudo ip link add link eth5 name tunnet type vlan id 20
         sudo ip addr add 10.0.1.32/24 dev tunnet
         sudo ip link set tunnet up
-        sudo ip link add link eth5 name vlannet type vlan id 30
+        sudo ip link add link eth5 name vlannet type vlan id 30 proto 802.1ad
         sudo ip link set vlannet up
     </exec>
 
@@ -467,29 +495,34 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
     <if id="3" net="VlanNet">
     </if>
     <if id="4" net="ExtNet">
+    </if-->
+    <if id="5" net="DataNet">
     </if>
     <!--if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
     </if-->
-    <if id="5" net="DataNet">
-    </if>
     <route type="ipv4" gw="10.0.0.1">default</route>
 
     <exec seq="on_boot" type="verbatim">
         # Create /dev/net/tun device
         #mkdir -p /dev/net/
         #mknod -m 666 /dev/net/tun  c 10 200
-        # Change MgmtNet and TunnNet interfaces MTU
+        # Change MgmtNet and DataNet interfaces MTU
         ifconfig eth1 mtu 1450
         sed -i -e '/iface eth1 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth2 mtu 1450
-        sed -i -e '/iface eth2 inet static/a \   mtu 1450' /etc/network/interfaces
-        ifconfig eth3 mtu 1450
-        sed -i -e '/iface eth3 inet static/a \   mtu 1450' /etc/network/interfaces
+        ifconfig eth5 mtu 1450
+        sed -i -e '/iface eth5 inet static/a \   mtu 1450' /etc/network/interfaces
         #systemd-resolve --set-dns=8.8.8.8 --interface=eth1
-	resolvectl dns 2 1.1.1.1
+        resolvectl dns 2 1.1.1.1
         #apt update
-	#apt install -y openvswitch-switch
+        #apt install -y openvswitch-switch
+	sudo ip link add link eth5 name extnet type vlan id 10
+        sudo ip link set extnet up
+        sudo ip link add link eth5 name tunnet type vlan id 20
+        sudo ip addr add 10.0.1.32/24 dev tunnet
+        sudo ip link set tunnet up
+        sudo ip link add link eth5 name vlannet type vlan id 30 proto 802.1ad
+        sudo ip link set vlannet up
     </exec>
 
     <!-- Copy ntp config and restart service -->
@@ -520,32 +553,6 @@ Copyright (C) 2021 Networking and Virtualization Research Group (GIROS)
         sudo ip addr add 10.0.10.1/24 dev extnet
         sudo ip link set extnet up
     </exec>
-
-    <exec seq="create-vlan-demo-scenario" type="verbatim">
-        . conf/admin-openrc.sh
-
-        # Create security group rules to allow ICMP, SSH and WWW access
-        admin_project_id=$(openstack project show admin -c id -f value)
-        default_secgroup_id=$(openstack security group list -f value | grep $admin_project_id | cut -d " " -f1)
-        openstack security group rule create --proto icmp --dst-port 0  $default_secgroup_id
-        openstack security group rule create --proto tcp  --dst-port 80 $default_secgroup_id
-        openstack security group rule create --proto tcp  --dst-port 22 $default_secgroup_id
-
-        # Create vlan based networks and subnetworks
-        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1000 vlan1000
-        openstack network create --share --provider-physical-network physnet1 --provider-network-type vlan --provider-segment 1001 vlan1001
-        openstack subnet create --network vlan1000 --gateway 10.1.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.2.0/24 --allocation-pool start=10.1.2.2,end=10.1.2.99 subvlan1000
-        openstack subnet create --network vlan1001 --gateway 10.1.3.1 --dns-nameserver 8.8.8.8 --subnet-range 10.1.3.0/24 --allocation-pool start=10.1.3.2,end=10.1.3.99 subvlan1001
-
-        # Create virtual machine
-        mkdir -p tmp
-        openstack keypair create vmA1 > tmp/vmA1
-        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmA1 --nic net-id=vlan1000 --key-name vmA1
-        openstack keypair create vmB1 > tmp/vmB1
-        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vmB1 --nic net-id=vlan1001 --key-name vmB1
-
-    </exec>
-
   </host>
 
 
